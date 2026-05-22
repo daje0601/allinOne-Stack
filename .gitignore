@@ -1,0 +1,49 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# --- venvs (uv) ---
+.venv/
+.venv-*/
+*/.venv/
+
+# --- environment / secrets ---
+.env
+*/.env
+!*.env.example
+
+# --- runtime artifacts ---
+server.log
+app.log
+server.pid
+*.pid
+*.log
+
+# --- generated data ---
+chroma_db/
+*/chroma_db/
+samples/
+*/samples/
+
+# --- NFS sentinels ---
+.nfs*
+*/.nfs*
+
+# --- jupyter ---
+.ipynb_checkpoints/
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*~
+
+# --- macOS / Linux ---
+.DS_Store

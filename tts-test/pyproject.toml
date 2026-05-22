@@ -1,0 +1,16 @@
+[project]
+name = "tts-test"
+version = "0.1.0"
+description = "vllm-omni + Qwen3-TTS smoke tests (offline + server)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    # vllm 0.16.0 (2026-02-26) + vllm-omni 0.16.0 (2026-03-01)
+    # — first stable pair with Qwen3-TTS day-0 support.
+    # vllm 0.16.0 requires torch==2.9.1.
+    "vllm==0.16.0",
+    "vllm-omni==0.16.0",
+    "openai",
+    "requests",
+    "soundfile",
+    "librosa",
+]

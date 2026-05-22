@@ -1,0 +1,25 @@
+[project]
+name = "stt-test"
+version = "0.1.0"
+description = "vLLM + openai/whisper-large-v3-turbo smoke tests (offline + server)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    # vLLM 0.7.3: cu12.4 torch wheel — compatible with driver 12.2 via CUDA minor-version compat.
+    # Newer vLLM (0.10+, 0.20+) pulls torch with cu12.6/12.8 and won't load on this driver.
+    "vllm==0.7.3",
+    # transformers 5.x removed `tokenizer.all_special_tokens_extended` which vLLM 0.7.3 calls.
+    "transformers>=4.50,<5",
+    # Audio + client deps used by test_offline.py / test_server.py
+    "librosa",
+    "soundfile",
+    "openai",
+    "requests",
+]
+
+[tool.uv]
+# Pin the torch stack explicitly so `uv sync` never tries to upgrade to a cu12.8 wheel.
+override-dependencies = [
+    "torch==2.5.1",
+    "torchvision==0.20.1",
+    "torchaudio==2.5.1",
+]

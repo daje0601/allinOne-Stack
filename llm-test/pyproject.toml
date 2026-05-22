@@ -1,0 +1,20 @@
+[project]
+name = "llm-test"
+version = "0.1.0"
+description = "vLLM-served LLaMA3 persona chatbot (RAG with Chroma + OpenAI embeddings, Gradio UI)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    # vllm 0.16.0 (torch 2.9.1) — same stack as tts-test, known to work on driver 12.2 (cu126/cu128 minor-compat)
+    "vllm==0.16.0",
+    # RAG stack
+    "langchain>=0.3",
+    "langchain-community>=0.3",
+    "langchain-openai>=0.2",
+    "chromadb>=0.5",
+    "tiktoken",
+    # UI
+    "gradio>=5",
+    # client
+    "openai",
+    "python-dotenv",
+]
