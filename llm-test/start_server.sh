@@ -18,7 +18,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 unset LD_LIBRARY_PATH
-export CUDA_VISIBLE_DEVICES=3                  # GPU 3번 (GPU 0=whisper, 2=qwen3-tts)
+export CUDA_VISIBLE_DEVICES=1                  # GPU 1번 독점 (GPU 0=STT+TTS 공유)
 
 # ------------------------------------------------------------------------------
 # 설정
@@ -30,16 +30,16 @@ READY_TIMEOUT=600                              # 모델 다운로드(~16GB) 포�
 # ------------------------------------------------------------------------------
 # 1단계: vLLM 서버 백그라운드 기동
 # ------------------------------------------------------------------------------
-echo "[start_llm] launching vllm serve on :$PORT (GPU 3)"
+echo "[start_llm] launching vllm serve on :$PORT (GPU 1)"
 # 옵션 설명:
 #   --max-model-len 8192                컨텍스트 길이 상한 (system prompt + 대화 + 응답)
-#   --gpu-memory-utilization 0.85       GPU 메모리의 85%까지 사용 → 충분한 KV 캐시
+#   --gpu-memory-utilization 0.5        GPU 메모리의 50%만 사용 (GPU 1에 다른 서비스 추가 여지)
 #   --dtype bfloat16                    BF16으로 가중치 저장 (LLaMA3 표준)
 uv run vllm serve "$MODEL" \
     --host 0.0.0.0 \
     --port "$PORT" \
     --max-model-len 8192 \
-    --gpu-memory-utilization 0.85 \
+    --gpu-memory-utilization 0.5 \
     --dtype bfloat16 &
 SERVER_PID=$!
 

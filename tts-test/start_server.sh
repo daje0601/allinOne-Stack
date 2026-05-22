@@ -26,7 +26,7 @@
 set -euo pipefail                              # 엄격 모드 (오류 즉시 중단)
 cd "$(dirname "$0")"                           # 스크립트가 놓인 폴더로 이동
 unset LD_LIBRARY_PATH                          # 시스템 CUDA 라이브러리 가림 회피
-export CUDA_VISIBLE_DEVICES=2                  # GPU 2번만 사용 (STT는 GPU 0)
+export CUDA_VISIBLE_DEVICES=0                  # GPU 0번을 STT와 공유 (LLM은 GPU 1)
 
 # ------------------------------------------------------------------------------
 # 설정
@@ -45,11 +45,14 @@ echo "[start_tts] launching vllm-omni serve on :$PORT (--omni mode)"
 #   --host 0.0.0.0         LAN 접근 허용
 #   --port 12000           포트
 #   --trust-remote-code    HF Hub 모델의 커스텀 코드 신뢰 (Qwen3-TTS는 필수)
+#   --gpu-memory-utilization 0.5
+#       STT와 GPU 0을 공유. STT가 0.3을 잡으므로 TTS는 0.5 (= 합 0.8, 80GiB의 64GiB)
 uv run vllm-omni serve "$MODEL" \
     --omni \
     --host 0.0.0.0 \
     --port "$PORT" \
-    --trust-remote-code &
+    --trust-remote-code \
+    --gpu-memory-utilization 0.5 &
 SERVER_PID=$!                                  # 백그라운드 PID 기록
 
 # 종료 시 정리 함수

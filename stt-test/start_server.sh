@@ -34,8 +34,8 @@ cd "$(dirname "$0")"
 # 그래서 이 스크립트에서는 그 변수를 지운 채로 진행.
 unset LD_LIBRARY_PATH
 
-# 이 머신엔 GPU가 8개(0~7). vLLM에 "GPU 0번만 보여라"라고 알려줌.
-# 다른 서비스(TTS는 GPU 2, LLM은 GPU 3)와 충돌하지 않게 분배.
+# 이 머신엔 GPU가 2개(0~1). vLLM에 "GPU 0번만 보여라"라고 알려줌.
+# 배치: STT+TTS는 GPU 0 공유, LLM은 GPU 1 독점.
 export CUDA_VISIBLE_DEVICES=0
 
 # ------------------------------------------------------------------------------
@@ -44,7 +44,7 @@ export CUDA_VISIBLE_DEVICES=0
 PORT=11000                                     # 서비스 포트
 MODEL=openai/whisper-large-v3-turbo            # HuggingFace 모델 ID (없으면 자동 다운로드)
 WARMUP_WAV=samples/stt-warmup.wav              # 워밍업용 짧은 영어 음성 파일
-READY_TIMEOUT=300                              # 서버 준비 대기 최대 시간(초)
+READY_TIMEOUT=600                              # 서버 준비 대기 최대 시간(초) — CUDA graph capture가 길어서 600s
 
 # ------------------------------------------------------------------------------
 # 0단계: 워밍업용 wav 파일이 없으면 만들어두기
@@ -74,7 +74,7 @@ echo "[start_server] launching vllm serve on :$PORT"
 #   --max-model-len 448     한 요청의 디코더 컨텍스트 최대 길이 (Whisper 한계)
 #   --max-num-seqs 400      동시에 처리할 수 있는 최대 요청 수
 #   --kv-cache-dtype fp8    KV 캐시를 8비트로 저장해 메모리 절약
-#   --gpu-memory-utilization 0.5  GPU 메모리의 50%까지만 사용
+#   --gpu-memory-utilization 0.3  GPU 메모리의 30%만 사용 (TTS와 GPU 0 공유)
 #   &                       백그라운드 실행
 uv run vllm serve "$MODEL" \
     --host 0.0.0.0 \
@@ -82,7 +82,7 @@ uv run vllm serve "$MODEL" \
     --max-model-len 448 \
     --max-num-seqs 400 \
     --kv-cache-dtype fp8 \
-    --gpu-memory-utilization 0.5 &
+    --gpu-memory-utilization 0.3 &
 SERVER_PID=$!                                  # 방금 띄운 백그라운드 프로세스의 PID 저장
 
 # cleanup(): 스크립트 종료 시 호출되는 정리 함수

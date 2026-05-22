@@ -15,7 +15,7 @@
 
 # .PHONY 선언: "이 이름들은 실제 파일이 아니라 그냥 명령어 별칭이다" 라고 알려줌.
 # (안 적어도 동작하지만, 같은 이름의 파일이 우연히 생기면 헷갈리지 않도록 명시)
-.PHONY: help sync-all start-stt start-tts start-llm start-app stop-all health logs
+.PHONY: help sync-all start-stt start-tts start-llm start-app start-gradio stop-all stop-stt stop-tts stop-llm stop-app stop-gradio _stop-port health logs
 
 # ------------------------------------------------------------------------------
 # help: 그냥 `make` 또는 `make help` 입력 시 사용 가능한 명령어 목록 출력
@@ -23,26 +23,42 @@
 # @ 표시는 "이 명령 자체는 화면에 출력하지 말고 결과만 보여줘"라는 뜻
 help:
 	@echo "voice-stack 모노레포 명령어:"
-	@echo "  make sync-all     — 3개 서브 프로젝트 모두 uv sync (의존성 설치)"
-	@echo "  make start-stt    — Whisper STT 서버 (:11000, GPU 0)"
-	@echo "  make start-tts    — Qwen3-TTS 서버 (:12000, GPU 2)"
-	@echo "  make start-llm    — LLaMA3 LLM 서버 (:13000, GPU 3)"
-	@echo "  make start-app    — Gradio 챗 UI (:14000, LLM 백엔드 호출)"
+	@echo "  make sync-all     — uv 설치 + 스크립트 실행권한 + 3개 서브 프로젝트 uv sync"
+	@echo "  make start-stt    — Whisper STT 서버 (:11000, GPU 0 — TTS와 공유)"
+	@echo "  make start-tts    — Qwen3-TTS 서버 (:12000, GPU 0 — STT와 공유)"
+	@echo "  make start-llm    — LLaMA3 LLM 서버 (:13000, GPU 1 독점)"
+	@echo "  make start-app    — 음성 챗 웹 UI (:14000, FastAPI+WS, STT+LLM+TTS 파이프라인)"
+	@echo "  make start-gradio — 음성 챗 Gradio UI (:14000, share=True → *.gradio.live 공개 URL)"
+	@echo "  make stop-stt     — STT만 정지 (:11000)"
+	@echo "  make stop-tts     — TTS만 정지 (:12000)"
+	@echo "  make stop-llm     — LLM만 정지 (:13000)"
+	@echo "  make stop-app     — 웹 UI만 정지 (:14000)"
+	@echo "  make stop-gradio  — Gradio UI만 정지 (:14000)"
 	@echo "  make stop-all     — 4개 서비스 모두 정지"
 	@echo "  make health       — 4개 endpoint 헬스체크 (HTTP 응답 코드 확인)"
 	@echo "  make logs         — 마지막 30줄씩 로그 보기"
 
 # ------------------------------------------------------------------------------
-# sync-all: 3개 서브 프로젝트의 Python 의존성을 모두 설치
+# sync-all: 부트스트랩(uv 설치 + 스크립트 권한) + 3개 서브 프로젝트 의존성 설치
 # ------------------------------------------------------------------------------
 # uv는 Python 패키지 매니저 (pip의 빠른 대체재). uv sync는 pyproject.toml에 적힌
 # 의존성을 .venv 폴더 안에 설치합니다.
 # UV_TORCH_BACKEND=cu126은 "PyTorch를 CUDA 12.6 호환 빌드로 가져와라"라는 힌트.
 # (이 머신의 GPU 드라이버가 CUDA 12.2까지 native 지원이라 cu126이 안전선)
+#
+# 앞쪽 두 줄은 "처음 받아온 환경에서도 한 방에 돌아가게" 하기 위한 부트스트랩:
+#   1) pip install -U uv         — uv가 없으면 설치, 있으면 최신으로 (idempotent)
+#   2) chmod +x .../*.sh         — git clone 직후엔 실행권한이 빠져있어서
+#                                   ./start_server.sh가 "Permission denied" 나는 것 방지
 sync-all:
+	@# 시스템 도구: stop-all에서 쓰는 fuser(=psmisc) 보장
+	apt-get update && apt-get install -y psmisc
+	pip install -U uv
+	chmod +x stt-test/*.sh tts-test/*.sh llm-test/*.sh web-voice-chat/*.sh
 	cd stt-test && uv sync
 	cd tts-test && UV_TORCH_BACKEND=cu126 uv sync
 	cd llm-test && UV_TORCH_BACKEND=cu126 uv sync
+	cd web-voice-chat && uv sync
 
 # ------------------------------------------------------------------------------
 # start-XXX: 각 서비스를 백그라운드에서 실행 (foreground 안 잡고 바로 셸 복귀)
@@ -64,10 +80,57 @@ start-llm:
 	cd llm-test && nohup ./start_server.sh > server.log 2>&1 &
 	@echo "llm-test launched, tail -f llm-test/server.log"
 
-# Gradio 챗 UI는 별도. LLM 서버(13000)가 미리 떠있어야 함.
+# 음성 챗 웹 UI (FastAPI + WS). STT/LLM/TTS 셋 다 떠있어야 정상 동작.
 start-app:
-	cd llm-test && nohup uv run python app.py > app.log 2>&1 &
-	@echo "gradio app launched, tail -f llm-test/app.log"
+	cd web-voice-chat && nohup ./start_server.sh > server.log 2>&1 &
+	@echo "web-voice-chat launched, tail -f web-voice-chat/server.log"
+
+# Gradio 버전 (share=True → 공개 *.gradio.live URL 발급).
+# server.log 의 'Running on public URL:' 줄에서 외부 접속 URL 확인.
+start-gradio:
+	cd web-voice-chat && nohup ./start_gradio.sh > gradio.log 2>&1 &
+	@echo "gradio launched, tail -f web-voice-chat/gradio.log (look for 'Running on public URL:')"
+
+# ------------------------------------------------------------------------------
+# stop-{stt,tts,llm,app}: 개별 서비스만 깔끔히 종료
+# ------------------------------------------------------------------------------
+# stop-all과 달리 "다른 서비스의 worker는 건드리면 안 되므로" pkill 패턴 매칭은
+# 못 씁니다. 대신 process group(PGID) 단위로 죽입니다.
+#
+# 동작 원리:
+#   1) fuser로 해당 포트를 잡은 메인 PID를 찾음
+#   2) ps로 그 PID의 PGID 조회 (vLLM 부모 + worker 자식들이 같은 PGID 공유)
+#   3) kill -9 -<PGID> 로 그룹 전체를 한 번에 보냄 → worker도 같이 정리
+#   4) sleep 후 포트가 비었는지 한 번 더 검증
+#
+# 모두 _stop-port 헬퍼를 재호출하는 방식으로 공통 로직을 한 곳에 둠.
+stop-stt:
+	@$(MAKE) --no-print-directory _stop-port PORT=11000 NAME=stt
+stop-tts:
+	@$(MAKE) --no-print-directory _stop-port PORT=12000 NAME=tts
+stop-llm:
+	@$(MAKE) --no-print-directory _stop-port PORT=13000 NAME=llm
+stop-app:
+	@$(MAKE) --no-print-directory _stop-port PORT=14000 NAME=app
+stop-gradio:
+	@$(MAKE) --no-print-directory _stop-port PORT=14000 NAME=gradio
+
+# 내부 헬퍼 (사용자가 직접 부르지 않음). PORT, NAME 변수를 받아 동작.
+_stop-port:
+	@PID=$$(fuser $(PORT)/tcp 2>/dev/null | tr -d ' '); \
+	if [ -z "$$PID" ]; then \
+	    echo "[$(NAME)] not running (port $(PORT) is free)"; \
+	else \
+	    PGID=$$(ps -o pgid= -p $$PID 2>/dev/null | tr -d ' '); \
+	    echo "[$(NAME)] killing pgrp $$PGID (port $(PORT), main pid $$PID)"; \
+	    kill -9 -$$PGID 2>/dev/null || kill -9 $$PID 2>/dev/null || true; \
+	    sleep 2; \
+	    if fuser $(PORT)/tcp >/dev/null 2>&1; then \
+	        echo "[$(NAME)] WARNING: still alive on port $(PORT)"; \
+	    else \
+	        echo "[$(NAME)] stopped."; \
+	    fi; \
+	fi
 
 # ------------------------------------------------------------------------------
 # stop-all: 4개 서비스를 한 번에 깔끔히 종료

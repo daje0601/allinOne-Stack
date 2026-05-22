@@ -45,5 +45,12 @@ samples/
 *.swp
 *~
 
+# --- Claude Code session data ---
+.claude/
+
+# --- Gradio share artifacts (cert/flagged) ---
+.gradio/
+*/.gradio/
+
 # --- macOS / Linux ---
 .DS_Store

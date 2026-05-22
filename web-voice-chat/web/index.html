@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice Chat</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header>
+    <h1>🎤 Voice Chat</h1>
+    <div class="status" id="status">disconnected</div>
+  </header>
+
+  <main>
+    <div id="messages" class="messages"></div>
+  </main>
+
+  <footer>
+    <button id="mic-btn" class="mic-btn" disabled>마이크 시작</button>
+    <button id="reset-btn" class="ghost-btn">대화 초기화</button>
+    <audio id="player" hidden></audio>
+  </footer>
+
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>

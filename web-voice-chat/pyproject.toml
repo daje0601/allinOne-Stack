@@ -1,0 +1,17 @@
+[project]
+name = "web-voice-chat"
+version = "0.1.0"
+description = "Voice-in / voice-out web chat that wires browser VAD → local Whisper STT → Llama LLM → Qwen3-TTS."
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "httpx>=0.27",
+    "pydantic>=2.8",
+    "python-dotenv>=1.0",
+    "python-multipart>=0.0.9",
+    "websockets>=13.0",
+    "gradio>=4.44",
+    "fastrtc[vad]>=0.0.20",
+    "numpy>=1.26",
+]
