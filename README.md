@@ -16,15 +16,14 @@ voice-stack/
 |---|---|---|---|---|---|
 | **STT** | `11000` | `openai/whisper-large-v3-turbo` | 0 | ~26GB | `POST /v1/audio/transcriptions` |
 | **TTS** | `12000` | `Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice` | 2 | ~25GB | `POST /v1/audio/speech` |
-| **LLM** | `13000` | `iamjoon/llama3-8b-persona-chatbot` | 3 | ~70GB | `POST /v1/chat/completions` |
-| **Chat UI** | `14000` | (Gradio + RAG, LLM 백엔드 호출) | – | – | `http://<host>:14000` |
+| **LLM** | `13000` | `iamjoon/llama3-8b-persona-chatbot` | 3 | ~50GB | `POST /v1/chat/completions` |
+| **Chat UI** | `14000` | (RAG, LLM 백엔드 호출) | – | – | `http://<host>:14000` |
 
 모두 OpenAI-호환 API → `from openai import OpenAI; OpenAI(base_url=...)` 그대로 사용 가능.
 
 ## 환경 (공통 함정)
 
-- GPU: H100 80GB ×8
-- Driver: 535.183.06 (CUDA 12.2 native, cu126/cu128 minor-compat OK, cu130은 incompatible)
+- GPU: H100 80GB × 2
 - Python: 3.12.12 (uv venv 각자)
 - 실행 시 셸 환경의 `LD_LIBRARY_PATH=/usr/local/cuda-12.2/lib64`가 venv NVIDIA 라이브러리를
   가리므로 모든 `start_server.sh`에 `unset LD_LIBRARY_PATH` 박혀있음.
@@ -34,17 +33,22 @@ voice-stack/
 ### 0. 셋업 (각 서브 프로젝트 한 번씩)
 
 ```bash
-cd voice-stack/stt-test  && uv sync && cd -
-cd voice-stack/tts-test  && UV_TORCH_BACKEND=cu126 uv sync && cd -
-cd voice-stack/llm-test  && UV_TORCH_BACKEND=cu126 uv sync && cd -
+cd voice-stack
+make sync-all
+```
+
+```bash
+cd voice-stack/stt-test  && uv sync
+cd voice-stack/tts-test  && uv sync
+cd voice-stack/llm-test  && uv sync
 ```
 
 `llm-test`는 추가로:
 ```bash
+apt-get update && apt-get install -y vim
 cd voice-stack/llm-test
-cp .env.example .env       # OPENAI_API_KEY 채우기
+vi .env       # OPENAI_API_KEY 채우기
 uv run python ingest.py    # Chroma 벡터DB 1회 빌드
-cd -
 ```
 
 ### 1. 서버 띄우기 (각각)
