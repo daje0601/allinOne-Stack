@@ -1,4 +1,4 @@
-# voice-stack
+# allinOne-Stack
 
 음성·LLM 3종 마이크로서비스 모노레포. 각 서브 프로젝트는 독립된 venv를 가지며,
 서로 OpenAI-호환 HTTP API로 느슨하게 결합됩니다.
