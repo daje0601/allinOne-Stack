@@ -44,7 +44,7 @@ export CUDA_VISIBLE_DEVICES=0
 PORT=11000                                     # 서비스 포트
 MODEL=openai/whisper-large-v3-turbo            # HuggingFace 모델 ID (없으면 자동 다운로드)
 WARMUP_WAV=samples/stt-warmup.wav              # 워밍업용 짧은 영어 음성 파일
-READY_TIMEOUT=600                              # 서버 준비 대기 최대 시간(초) — CUDA graph capture가 길어서 600s
+READY_TIMEOUT=1800                             # 서버 준비 대기 최대 시간(초) — 첫 다운로드(~1.5GB) + CUDA graph capture 여유로 30분
 
 # ------------------------------------------------------------------------------
 # 0단계: 워밍업용 wav 파일이 없으면 만들어두기
@@ -74,6 +74,8 @@ echo "[start_server] launching vllm serve on :$PORT"
 #   --max-model-len 448     한 요청의 디코더 컨텍스트 최대 길이 (Whisper 한계)
 #   --max-num-seqs 400      동시에 처리할 수 있는 최대 요청 수
 #   --kv-cache-dtype fp8    KV 캐시를 8비트로 저장해 메모리 절약
+#   --enforce-eager         CUDA graph capture 비활성 → 워밍업 빠름 (~5분 → ~1분).
+#                           추론은 미세하게 느려짐. 약한 GPU에서 600s timeout 회피용.
 #   --gpu-memory-utilization 0.3  GPU 메모리의 30%만 사용 (TTS와 GPU 0 공유)
 #   &                       백그라운드 실행
 uv run vllm serve "$MODEL" \
@@ -82,6 +84,7 @@ uv run vllm serve "$MODEL" \
     --max-model-len 448 \
     --max-num-seqs 400 \
     --kv-cache-dtype fp8 \
+    --enforce-eager \
     --gpu-memory-utilization 0.3 &
 SERVER_PID=$!                                  # 방금 띄운 백그라운드 프로세스의 PID 저장
 
