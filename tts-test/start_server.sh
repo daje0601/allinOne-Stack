@@ -33,7 +33,7 @@ export CUDA_VISIBLE_DEVICES=0                  # GPU 0번을 STT와 공유 (LLM�
 # ------------------------------------------------------------------------------
 PORT=12000                                     # 서비스 포트
 MODEL="Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice"   # HuggingFace 모델 ID
-READY_TIMEOUT=900                              # 2-stage 파이프라인이라 더 김 (15분)
+READY_TIMEOUT=1800                             # 2-stage 파이프라인 + 첫 다운로드(~3.5GB) 고려해 30분
 
 # ------------------------------------------------------------------------------
 # 1단계: vllm-omni 서버 백그라운드 기동
