@@ -21,7 +21,7 @@ voice-stack/
 
 모두 OpenAI-호환 API → `from openai import OpenAI; OpenAI(base_url=...)` 그대로 사용 가능.
 
-## 환경 (공통 함정)
+## 환경
 
 - GPU: H100 80GB × 2
 - Python: 3.12.12 (uv venv 각자)
