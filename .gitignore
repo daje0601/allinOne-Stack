@@ -16,7 +16,7 @@ dist/
 
 # --- environment / secrets ---
 .env
-*/.env
+!*/.env
 !*.env.example
 
 # --- runtime artifacts ---

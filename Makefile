@@ -50,13 +50,27 @@ help:
 #                                   ./start_server.sh가 "Permission denied" 나는 것 방지
 sync-all:
 	@# 시스템 도구: stop-all에서 쓰는 fuser(=psmisc) 보장
-# 	apt-get update && apt-get install -y psmisc
+	@# (apt-get update && apt-get install -y psmisc 가 필요하면 주석 풀어 사용 — recipe 라인이라 '#'을 라인 맨 앞에 두면 GNU make가 missing separator 에러 냄)
 	pip install -U uv
 	chmod +x stt-test/*.sh tts-test/*.sh llm-test/*.sh web-voice-chat/*.sh
 	cd stt-test && uv sync
 	cd tts-test && UV_TORCH_BACKEND=cu126 uv sync
 	cd llm-test && UV_TORCH_BACKEND=cu126 uv sync
 	cd web-voice-chat && uv sync
+	@# RAG chroma_db 자동 빌드: OPENAI_API_KEY가 llm-test/.env 에 채워져 있을 때만.
+	@# 이미 chroma_db가 있으면 스킵. 키가 없으면 안내만 출력하고 통과 (sync-all은 항상 성공).
+	@if [ -d llm-test/chroma_db ]; then \
+	    echo "[sync-all] llm-test/chroma_db already exists → skipping ingest"; \
+	elif [ -f llm-test/.env ] && grep -qE "^OPENAI_API_KEY=sk-" llm-test/.env; then \
+	    echo "[sync-all] building chroma_db (RAG index, OpenAI embedding)..."; \
+	    cd llm-test && unset LD_LIBRARY_PATH && uv run python ingest.py; \
+	else \
+	    echo "[sync-all] OPENAI_API_KEY not set in llm-test/.env → skipping chroma_db build."; \
+	    echo "[sync-all]   to enable RAG later:"; \
+	    echo "[sync-all]     cp llm-test/.env.example llm-test/.env"; \
+	    echo "[sync-all]     # llm-test/.env 열어 OPENAI_API_KEY=sk-... 채우기"; \
+	    echo "[sync-all]     cd llm-test && uv run python ingest.py"; \
+	fi
 
 # ------------------------------------------------------------------------------
 # start-XXX: 각 서비스를 백그라운드에서 실행 (foreground 안 잡고 바로 셸 복귀)
