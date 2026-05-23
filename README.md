@@ -4,7 +4,7 @@
 서로 OpenAI-호환 HTTP API로 느슨하게 결합됩니다.
 
 ```
-voice-stack/
+ allinOne-Stack/
 ├─ stt-test/   # vLLM × Whisper-large-v3-turbo (STT, port 11000)
 ├─ tts-test/   # vllm-omni × Qwen3-TTS (TTS, port 12000)
 └─ llm-test/   # vLLM × LLaMA3-8B 페르소나 챗봇 + RAG (port 13000) + Gradio UI (14000)
@@ -33,20 +33,20 @@ voice-stack/
 ### 0. 셋업 (각 서브 프로젝트 한 번씩)
 
 ```bash
-cd voice-stack
+cd  allinOne-Stack
 make sync-all
 ```
 
 ```bash
-cd voice-stack/stt-test  && uv sync
-cd voice-stack/tts-test  && uv sync
-cd voice-stack/llm-test  && uv sync
+cd  allinOne-Stack/stt-test  && uv sync
+cd  allinOne-Stack/tts-test  && uv sync
+cd  allinOne-Stack/llm-test  && uv sync
 ```
 
 `llm-test`는 추가로:
 ```bash
 apt-get update && apt-get install -y vim
-cd voice-stack/llm-test
+cd  allinOne-Stack/llm-test
 vi .env       # OPENAI_API_KEY 채우기
 uv run python ingest.py    # Chroma 벡터DB 1회 빌드
 ```
