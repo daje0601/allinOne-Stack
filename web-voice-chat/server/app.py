@@ -28,11 +28,13 @@ from .protocol import (
     ResetHistory,
     STTResult,
     SessionStart,
-    TTSAudio,
+    TTSChunk,
+    TTSEnd,
+    TTSStart,
 )
 from .session import Session
 from .stt import STTClient
-from .tts import TTSClient
+from .tts import TTS_PCM_SAMPLE_RATE, TTSClient
 
 logging.basicConfig(
     level=logging.INFO,
@@ -151,19 +153,33 @@ async def _handle_utterance(
         await _send(ws, Error(utterance_idx=idx, stage="llm", message=str(e)))
         return
 
-    # 3) TTS
+    # 3) TTS — streaming PCM chunks (TTFB ~100ms vs ~8s for full-synthesis-then-send)
     try:
         t0 = time.perf_counter()
-        wav_out = await state.tts.synthesize(answer)
-        tts_ms = int((time.perf_counter() - t0) * 1000)
-        await _send(
-            ws,
-            TTSAudio(
+        seq = 0
+        start_sent = False
+        async for chunk in state.tts.synthesize_stream(answer):
+            if not start_sent:
+                ttfb_ms = int((time.perf_counter() - t0) * 1000)
+                await _send(ws, TTSStart(
+                    utterance_idx=idx,
+                    sample_rate=TTS_PCM_SAMPLE_RATE,
+                    ttfb_ms=ttfb_ms,
+                ))
+                start_sent = True
+            await _send(ws, TTSChunk(
                 utterance_idx=idx,
-                wav_base64=base64.b64encode(wav_out).decode("ascii"),
-                latency_ms=tts_ms,
-            ),
-        )
+                seq=seq,
+                pcm_base64=base64.b64encode(chunk).decode("ascii"),
+            ))
+            seq += 1
+        total_ms = int((time.perf_counter() - t0) * 1000)
+        await _send(ws, TTSEnd(
+            utterance_idx=idx,
+            total_chunks=seq,
+            total_latency_ms=total_ms,
+        ))
+        log.info("tts idx=%s chunks=%s total=%sms", idx, seq, total_ms)
     except Exception as e:
         log.exception("TTS failed")
         await _send(ws, Error(utterance_idx=idx, stage="tts", message=str(e)))

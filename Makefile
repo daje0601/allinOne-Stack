@@ -15,7 +15,7 @@
 
 # .PHONY 선언: "이 이름들은 실제 파일이 아니라 그냥 명령어 별칭이다" 라고 알려줌.
 # (안 적어도 동작하지만, 같은 이름의 파일이 우연히 생기면 헷갈리지 않도록 명시)
-.PHONY: help sync-all start-stt start-tts start-llm start-app start-gradio stop-all stop-stt stop-tts stop-llm stop-app stop-gradio _stop-port health logs
+.PHONY: help sync-all start-stt start-tts start-llm start-app stop-all stop-stt stop-tts stop-llm stop-app _stop-port health logs
 
 # ------------------------------------------------------------------------------
 # help: 그냥 `make` 또는 `make help` 입력 시 사용 가능한 명령어 목록 출력
@@ -28,12 +28,10 @@ help:
 	@echo "  make start-tts    — Qwen3-TTS 서버 (:12000, GPU 0 — STT와 공유)"
 	@echo "  make start-llm    — LLaMA3 LLM 서버 (:13000, GPU 1 독점)"
 	@echo "  make start-app    — 음성 챗 웹 UI (:14000, FastAPI+WS, STT+LLM+TTS 파이프라인)"
-	@echo "  make start-gradio — 음성 챗 Gradio UI (:14000, share=True → *.gradio.live 공개 URL)"
 	@echo "  make stop-stt     — STT만 정지 (:11000)"
 	@echo "  make stop-tts     — TTS만 정지 (:12000)"
 	@echo "  make stop-llm     — LLM만 정지 (:13000)"
 	@echo "  make stop-app     — 웹 UI만 정지 (:14000)"
-	@echo "  make stop-gradio  — Gradio UI만 정지 (:14000)"
 	@echo "  make stop-all     — 4개 서비스 모두 정지"
 	@echo "  make health       — 4개 endpoint 헬스체크 (HTTP 응답 코드 확인)"
 	@echo "  make logs         — 마지막 30줄씩 로그 보기"
@@ -52,7 +50,7 @@ help:
 #                                   ./start_server.sh가 "Permission denied" 나는 것 방지
 sync-all:
 	@# 시스템 도구: stop-all에서 쓰는 fuser(=psmisc) 보장
-	apt-get update && apt-get install -y psmisc
+# 	apt-get update && apt-get install -y psmisc
 	pip install -U uv
 	chmod +x stt-test/*.sh tts-test/*.sh llm-test/*.sh web-voice-chat/*.sh
 	cd stt-test && uv sync
@@ -85,12 +83,6 @@ start-app:
 	cd web-voice-chat && nohup ./start_server.sh > server.log 2>&1 &
 	@echo "web-voice-chat launched, tail -f web-voice-chat/server.log"
 
-# Gradio 버전 (share=True → 공개 *.gradio.live URL 발급).
-# server.log 의 'Running on public URL:' 줄에서 외부 접속 URL 확인.
-start-gradio:
-	cd web-voice-chat && nohup ./start_gradio.sh > gradio.log 2>&1 &
-	@echo "gradio launched, tail -f web-voice-chat/gradio.log (look for 'Running on public URL:')"
-
 # ------------------------------------------------------------------------------
 # stop-{stt,tts,llm,app}: 개별 서비스만 깔끔히 종료
 # ------------------------------------------------------------------------------
@@ -112,8 +104,6 @@ stop-llm:
 	@$(MAKE) --no-print-directory _stop-port PORT=13000 NAME=llm
 stop-app:
 	@$(MAKE) --no-print-directory _stop-port PORT=14000 NAME=app
-stop-gradio:
-	@$(MAKE) --no-print-directory _stop-port PORT=14000 NAME=gradio
 
 # 내부 헬퍼 (사용자가 직접 부르지 않음). PORT, NAME 변수를 받아 동작.
 _stop-port:
@@ -168,7 +158,7 @@ health:
 	    $$(curl -s -o /dev/null -w '%{http_code}' http://localhost:12000/v1/models)
 	@printf "  LLM  :13000 (llama3)     → HTTP %s\n" \
 	    $$(curl -s -o /dev/null -w '%{http_code}' http://localhost:13000/v1/models)
-	@printf "  UI   :14000 (gradio)     → HTTP %s\n" \
+	@printf "  APP  :14000 (voice-chat) → HTTP %s\n" \
 	    $$(curl -s -o /dev/null -w '%{http_code}' http://localhost:14000/)
 
 # ------------------------------------------------------------------------------

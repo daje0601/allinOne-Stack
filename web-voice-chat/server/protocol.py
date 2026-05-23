@@ -43,10 +43,37 @@ class LLMResult(BaseModel):
 
 
 class TTSAudio(BaseModel):
+    """[deprecated] Whole-WAV one-shot. Kept for backward compat / debug."""
     type: Literal["tts.audio"] = "tts.audio"
     utterance_idx: int
     wav_base64: str
     latency_ms: int
+
+
+class TTSStart(BaseModel):
+    """첫 PCM 청크 직전에 전송. 클라이언트가 AudioContext를 sample_rate에 맞춰 초기화."""
+    type: Literal["tts.start"] = "tts.start"
+    utterance_idx: int
+    sample_rate: int
+    channels: int = 1
+    sample_format: Literal["int16le"] = "int16le"
+    ttfb_ms: int  # request → first PCM byte 사이 시간 (서버 측정)
+
+
+class TTSChunk(BaseModel):
+    """Raw PCM 청크 (base64). seq는 0부터 증가."""
+    type: Literal["tts.chunk"] = "tts.chunk"
+    utterance_idx: int
+    seq: int
+    pcm_base64: str
+
+
+class TTSEnd(BaseModel):
+    """utterance 종료 마커. 클라이언트가 재생 큐 끝까지 흘리고 마이크 재개."""
+    type: Literal["tts.end"] = "tts.end"
+    utterance_idx: int
+    total_chunks: int
+    total_latency_ms: int
 
 
 class Error(BaseModel):

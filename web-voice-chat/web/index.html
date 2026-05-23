@@ -3,13 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Voice Chat</title>
+  <title>푸와의 대화 · Voice Chat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
   <header>
-    <h1>🎤 Voice Chat</h1>
-    <div class="status" id="status">disconnected</div>
+    <h1>
+      <span class="brand-mark" aria-hidden="true">🐻</span>
+      <span>푸와의 대화</span>
+    </h1>
+    <div class="status" id="status" role="status" aria-live="polite">disconnected</div>
   </header>
 
   <main>
@@ -17,8 +22,24 @@
   </main>
 
   <footer>
-    <button id="mic-btn" class="mic-btn" disabled>마이크 시작</button>
-    <button id="reset-btn" class="ghost-btn">대화 초기화</button>
+    <select id="mic-select" aria-label="마이크 디바이스 선택"></select>
+    <select id="sample-rate-select" aria-label="TTS 재생 sample rate"
+            title="TTS 재생 sample rate. 서버 권장은 24000Hz(정상). 16000Hz로 두면 1.5배 느린 '이상한 곰 목소리' 재현.">
+      <option value="">서버 권장</option>
+      <option value="24000">24000 Hz (정상)</option>
+      <option value="16000">16000 Hz (느린 곰)</option>
+      <option value="32000">32000 Hz (빠른 다람쥐)</option>
+    </select>
+    <button id="mic-btn" class="mic-btn" disabled aria-label="마이크 시작/정지">
+      <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+      <span>마이크 시작</span>
+    </button>
+    <button id="reset-btn" class="ghost-btn" aria-label="대화 이력 초기화">대화 초기화</button>
     <audio id="player" hidden></audio>
   </footer>
 

@@ -47,6 +47,11 @@ samples/
 
 # --- Claude Code session data ---
 .claude/
+.bkit/
+.playwright-mcp/
+
+# --- design / dev screenshots (ephemeral) ---
+voice-chat-*.png
 
 # --- Gradio share artifacts (cert/flagged) ---
 .gradio/

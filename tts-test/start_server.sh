@@ -45,14 +45,16 @@ echo "[start_tts] launching vllm-omni serve on :$PORT (--omni mode)"
 #   --host 0.0.0.0         LAN 접근 허용
 #   --port 12000           포트
 #   --trust-remote-code    HF Hub 모델의 커스텀 코드 신뢰 (Qwen3-TTS는 필수)
-#   --gpu-memory-utilization 0.5
-#       STT와 GPU 0을 공유. STT가 0.3을 잡으므로 TTS는 0.5 (= 합 0.8, 80GiB의 64GiB)
+#   --gpu-memory-utilization 0.85
+#       STT(0.3)와 GPU 0 공유하지만 공격적으로 0.85 사용.
+#       합계 0.3 + 0.85 = 1.15 > 1.0 → OOM 위험 감수하고 RTF 개선 시도.
+#       OOM 나면 0.6 정도로 백오프 필요.
 uv run vllm-omni serve "$MODEL" \
     --omni \
     --host 0.0.0.0 \
     --port "$PORT" \
     --trust-remote-code \
-    --gpu-memory-utilization 0.5 &
+    --gpu-memory-utilization 0.85 &
 SERVER_PID=$!                                  # 백그라운드 PID 기록
 
 # 종료 시 정리 함수
